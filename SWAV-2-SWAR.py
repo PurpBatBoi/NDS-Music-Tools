@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Simple SWAV to SWAR Bundler
-Place this script in a folder with .swav files and run it.
+SWAV to SWAR Bundler - Numerical Indexing
+Sorts files based on the leading number (e.g., 0_, 1_, 10_) 
+to ensure the SWAR index matches your SBNK definitions.
 """
 
 import sys
 import os
 from pathlib import Path
+import re
 
 # --- Dependency Check ---
 try:
@@ -19,61 +21,65 @@ except ImportError:
     sys.exit(1)
 
 def main():
-    # 1. Determine the folder where this script is sitting
     current_folder = Path(__file__).parent.resolve()
     folder_name = current_folder.name
-    output_filename = current_folder / f"{folder_name}.swar"
+    output_filename = current_folder / f"newSND-bank.swar" # Matches your screenshot name
 
-    print(f"--- SWAV to SWAR Bundler ---")
+    print(f"--- SWAV to SWAR Bundler (Fixed Indexing) ---")
     print(f"Working directory: {current_folder}")
 
-    # 2. Find all .swav files
+    # 1. Find all .swav files
     swav_files = list(current_folder.glob("*.swav"))
 
     if not swav_files:
         print("\n[!] No .swav files found in this folder.")
-        print("    Make sure you converted your .wav files to .swav first.")
     else:
-        # 3. Sort files Alphabetically (A-Z)
-        # This ensures Horn_54 comes before Horn_57
-        swav_files.sort(key=lambda x: x.name)
-        
-        print(f"\nFound {len(swav_files)} files. Sorting by name...")
+        # 2. Numerical Sort Logic
+        # This function extracts the first group of digits from the filename
+        def get_leading_number(path):
+            match = re.search(r'^(\+?\d+)', path.name)
+            return int(match.group(1)) if match else 999
 
-        # Prepare list for NDSpy
+        # Sort based on the actual integer value (10 comes AFTER 2)
+        swav_files.sort(key=get_leading_number)
+        
+        print(f"\nSorting {len(swav_files)} files by leading number...")
+        print("-" * 45)
+        print(f"{'INDEX':<8} | {'FILENAME':<25}")
+        print("-" * 45)
+
         swav_objects = []
         loaded_count = 0
 
-        # 4. Load files
-        print("-" * 40)
+        # 3. Load files and print verification table
         for i, f in enumerate(swav_files):
             try:
-                # Print index and name so user can verify order
-                print(f"[{i}] Adding: {f.name}")
+                # This visual check ensures your SBNK links will work
+                print(f"SWAR[{i}]   <-- {f.name}")
+                
                 swav = ndspy.soundWave.SWAV.fromFile(str(f))
                 swav_objects.append(swav)
                 loaded_count += 1
             except Exception as e:
                 print(f"    [!] Failed to load {f.name}: {e}")
 
-        # 5. Save SWAR
+        # 4. Save SWAR
         if loaded_count > 0:
             try:
-                print("-" * 40)
-                print(f"Creating SWAR file with {loaded_count} waves...")
+                print("-" * 45)
+                print(f"Packing {loaded_count} waves into archive...")
                 
                 swar = ndspy.soundWaveArchive.SWAR.fromWaves(swav_objects)
                 swar.saveToFile(str(output_filename))
                 
                 print(f"\n[SUCCESS] Created: {output_filename.name}")
-                print(f"Location: {output_filename}")
+                print(f"Your SBNK instruments should now map correctly to these IDs.")
             except Exception as e:
                 print(f"\n[!] Error saving SWAR file: {e}")
         else:
             print("\n[!] No valid files to create archive.")
 
-    # 6. Keep window open
-    print("\n" + "="*40)
+    print("\n" + "="*45)
     input("Done. Press Enter to exit...")
 
 if __name__ == "__main__":
