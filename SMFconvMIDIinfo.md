@@ -126,6 +126,19 @@ The following commands provide advanced logic, flow control, and randomization. 
 #### C. Randomization (`_r`)
 Most standard commands have a randomized variation denoted by the `_r` suffix. When executed, the engine picks a random value between `min` and `max`.
 
+* Table of supported randomized commands:
+
+| Commands      |               |             |             |
+| ------------- | ------------- | ----------- | ----------- |
+| wait_r        | prg_r         | volume_r    | volume2_r   |
+| main_volume_r | pitchbend_r   | pan_r       | transpose_r |
+| porta_time_r  | sweep_pitch_r | mod_depth_r | mod_speed_r |
+| attack_r      | decay_r       | sustain_r   | release_r   |
+| mod_delay_r   | loop_start_r  | setvar_r    | addvar_r    |
+| subvar_r      | mulvar_r      | divvar_r    | shiftvar_r  |
+| randvar_r     | cmp_eq_r      | cmp_ge_r    | cmp_gt_r    |
+| cmp_le_r      | cmp_lt_r      | cmp_ne_r    |             |
+
 *   **Syntax:** `command_r min, max`
 *   **Common Examples:**
     *   `pitchbend_r -20, 20` (Random detuning)
