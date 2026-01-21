@@ -1,5 +1,5 @@
-# NSMB SND Instrument Creation Helpers
-Helper Scripts for creating Sound/Instruments for NSMBDS
+# NSMBDS/DS Script/Tools 
+Helper Scripts/Tools for creating music for NSMBDS/DS
 
 Requirements:
 - Python
