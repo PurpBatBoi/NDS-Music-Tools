@@ -102,3 +102,13 @@ Here is how your spreadsheet data should look (headers must match exactly):
 2.  **Running:**
     *   Drag and drop your saved `.csv` file onto the `csv_to_sbnk.py` script.
     *   The `.sbnk` file will appear in the same folder as the CSV.
+
+3. **Case Sensitivity Rules**
+    *   Column Headers (Row 1): These are Case-Sensitive.
+      *   You **must** use `InstID`, `Type`, `WaveID`, etc.
+      *   **Incorrect:** `instid`, `type`, `waveid` (The script will not find them).
+
+   *   Cell Values (Data): These are Not Case-Sensitive.
+      *   The script automatically cleans up text data.
+      *   `Simple`, `simple`, and `SIMPLE` all work perfectly.
+      *   `PCM`, `pcm`, and `Pcm` are all accepted.
