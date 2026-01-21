@@ -1,10 +1,11 @@
-This document outlines the avaliable feature set SMFconv provides to convert Standard MIDI Files (SMF) for the Nintendo DS, and provides a complete reference for the supported commands.
+This document outlines the available feature set SMFconv provides to convert Standard MIDI Files (SMF) for the Nintendo DS, and provides a complete reference for the supported commands.
 
 ---
+
 ### 1. Note and Pitch
 *   **Note On / Note Off:** Fully supported.
     *   Velocity (0-127) is preserved and uses squared value scaling (127 = 100%).
-    *   Middle C is represented as `cn4` (Key 60)
+    *   Middle C is represented as `cn4` (Key 60).
 *   **Pitch Bend:** Supported.
 *   **Program Change:** Supported.
 
@@ -42,11 +43,13 @@ The tool maps standard MIDI CCs to specific sound engine commands.
 | **89** | `loop_start` | Sets a loop starting point. | Value 0 for individual track loops |
 | **90** | `loop_end` | Jumps back to loop start. | Arbitrary value for individual track loops |
 
+---
+
 ### 3. Meta Events: Text Command Targeting
 
 **Text Events (`FF 01`)** allow you to embed raw engine commands directly into your MIDI file. Since standard MIDI doesn't support features like randomization or logic, you use these text events to "speak" directly to the NITRO engine.
 
-You can control exactly which tracks receive these commands by adding a specific prefix to your text string.
+**Important:** The converter (`smfconv`) is strict. If you do not use a prefix (like `text_00:`), it may treat your command as a comment and ignore it.
 
 #### For Reaper Users
 Insert these commands in the **MIDI Editor** using the **Text Events** lane.
@@ -56,21 +59,20 @@ Insert these commands in the **MIDI Editor** using the **Text Events** lane.
     *   *Example:* `text_all: notewait_off` (Enables polyphony for the entire song).
 
 *   **Target Specific Track (`text_XX:`):**
-    Sends the command to a specific Track ID (00–15), regardless of which MIDI lane the event is physically placed on.
+    **Recommended Method.** Sends the command to a specific Track ID (00–15).
     *   **Rule:** `Track ID = MIDI Channel - 1`
-    *   *Example:* `text_00: volume 127` (Sets volume for **MIDI Ch 1**).
+    *   *Example:* `text_00: call beat_a` (Executes the call on **MIDI Ch 1**).
     *   *Example:* `text_01: volume 127` (Sets volume for **MIDI Ch 2**).
 
 *   **Target Current Track (No Prefix):**
     Sends the command only to the specific track where the text event is placed.
-    *   *Example:* `call_seq` (Calls a subroutine only for this instrument).
+    *   *Warning:* Some versions of `smfconv` ignore commands without prefixes. It is safer to use `text_XX:`.
 
 #### For Domino Users
 In Domino, you can insert these commands directly into the Event List.
 1.  Right-click in the **Event List** pane.
 2.  Select **Insert > Meta Event > Text Event**.
 3.  Type the command (e.g., `loop_start`) into the data field.
-    *   *Note:* Domino handles track separation natively. If you place a text event on "Track 1" in Domino, it automatically applies to that track without needing a prefix, unless you specifically want to broadcast to `text_all:`.
 
 ---
 
@@ -109,24 +111,34 @@ The following commands provide advanced logic, flow control, and randomization. 
 > ```
 
 #### B. Flow Control (Jumps & Subroutines)
+This allows you to reuse patterns to save file size.
+
 *   **`jump label`**
     *   Performs an unconditional jump to a specific marker or label. Commonly used for infinite loops.
 *   **`call label`**
     *   Jumps to a label to run a "subroutine" (a reusable musical pattern).
+    *   **Important:** When using `call` in Reaper, stack the commands immediately next to each other (e.g., `1.3.00` and `1.3.01`) to avoid the engine inserting unwanted `wait` commands (silence) between patterns.
 *   **`ret`**
-    *   Returns from a subroutine, resuming playback at the point where `call` was used.
+    *   **Crucial:** Returns from a subroutine. You **must** place this at the end of any pattern you `call`, otherwise the song will stop or crash.
 
-> **Example: Infinite Loop**
+> **Example: Pattern System**
+> **1. The Conductor (Start of file):**
 > ```text
-> my_loop:
-> ... (music notes) ...
-> jump my_loop           ; Jumps back to start
+> text_00: call beat_a   ; Plays pattern A
+> text_00: call beat_b   ; Plays pattern B
+> text_00: jump_to_start ; Loops forever
+> ```
+> **2. The Data (End of file):**
+> ```text
+> text_00: beat_a:       ; Label
+> ... (Drum Notes) ...
+> text_00: ret           ; MUST include this to go back!
 > ```
 
 #### C. Randomization (`_r`)
 Most standard commands have a randomized variation denoted by the `_r` suffix. When executed, the engine picks a random value between `min` and `max`.
 
-* Table of supported randomized commands:
+* **Table of supported randomized commands:**
 
 | Commands      |               |             |             |
 | ------------- | ------------- | ----------- | ----------- |
