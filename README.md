@@ -1,5 +1,5 @@
-# NDS-Music-Tools
-Helper Scripts for Nintendo DS Audio Creation
+# NSMB SND Instrument Creation Helpers
+Helper Scripts for creating Sound/Instruments for NSMBDS
 
 Requirements:
 - Python
