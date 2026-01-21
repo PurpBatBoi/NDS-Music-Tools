@@ -13,7 +13,6 @@ The first row of your spreadsheet **must** contain these exact headers. Capitali
 | **Type** | The instrument type (see Section 2). | **Yes** |
 | **NoteType** | `PCM`, `PSG`, or `NOISE`. | No (Defaults to PCM) |
 | **WaveID** | The ID of the sample in the SWAR, or Duty Cycle for PSG. | No (Defaults to 0) |
-| **SwarID** | Which Wave Archive to use (0 or 1 usually). | No (Defaults to 0) |
 | **RootKey** | The base MIDI note of the sample (original pitch). | No (Defaults to 60/C4) |
 | **KeyMin** | Used for **Range** (Drum) instruments only. | Only for `Range` |
 | **KeyMax** | Used for **Regional** and **Range** instruments. | Only for `Reg` / `Range` |
