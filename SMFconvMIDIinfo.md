@@ -141,9 +141,9 @@ Most standard commands have a randomized variation denoted by the `_r` suffix. W
 
 *   **Syntax:** `command_r min, max`
 *   **Common Examples:**
-    *   `pitchbend_r -20, 20` (Random detuning)
-    *   `pan_r 0, 127` (Random panning position)
-    *   `wait_r 40, 56` (Humanized timing)
+    *   `text_XX: pitchbend_r -20, 20` (Random detuning)
+    *   `text_XX: pan_r 0, 127` (Random panning position)
+    *   `text_XX: wait_r 40, 56` (Humanized timing)
 
 #### D. Variables & Math
 NITRO-Composer provides **16 Local Variables** (0-15) per sequence and **16 Global Variables** (16-31) shared across the system.
