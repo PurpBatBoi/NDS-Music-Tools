@@ -69,15 +69,15 @@ The `NoteType` column controls whether the sound uses a sample (PCM) or the inte
 
 Here is how your spreadsheet data should look (headers must match exactly):
 
-| A      | B        | C      | D      | E        | F      | G      | H       | I      | J     | K       | L       | M   | N           |
-| ------ | -------- | ------ | ------ | -------- | ------ | ------ | ------- | ------ | ----- | ------- | ------- | --- | ----------- |
-| InstID | Type     | KeyMin | KeyMax | NoteType | WaveID | SwarID | RootKey | Attack | Decay | Sustain | Release | Pan | Comment     |
-| 0      | Simple   |        |        | PCM      | 0      | 0      | 69      | 110    | 50    | 90      | 115     | 64  | Horn    |
-| 1      | Regional |        | 60     | PCM      | 4      | 0      | 51      | 110    | 50    | 90      | 115     | 64  | Violin  |
-| 1      | Regional |        | 127    | PCM      | 5      | 0      | 69      | 110    | 50    | 90      | 115     | 64  |         |
-| 2      | Range    | 36     | 36     | PCM      | 11     | 0      | 36      | 127    | 127   | 127     | 60      | 64  | Kick    |
-| 2      | Range    | 38     | 38     | PCM      | 13     | 0      | 38      | 127    | 127   | 127     | 60      | 64  | Snare   |
-| 2      | Range    | 40     | 40     | PCM      | 14     | 0      | 40      | 127    | 127   | 127     | 60      | 64  | Hat     |
+| A      | B        | C      | D      | E        | F      | G      | H       | I      | J     | K       | L       | M   |
+| ------ | -------- | ------ | ------ | -------- | ------ | ------ | ------- | ------ | ----- | ------- | ------- | --- |
+| InstID | Type     | KeyMin | KeyMax | NoteType | WaveID | RootKey | Attack | Decay | Sustain | Release | Pan | Comment     |
+| 0      | Simple   | 0        | 127        | PCM      | 0      | 69      | 110    | 50    | 90      | 115     | 64  | Horn    |
+| 1      | Regional | 0       | 60     | PCM      | 4      | 51      | 110    | 50    | 90      | 115     | 64  | Violin  |
+| 1      | Regional | 61       | 127    | PCM      | 5      | 69      | 110    | 50    | 90      | 115     | 64  |         |
+| 2      | Range    | 36     | 36     | PCM      | 11     | 36      | 127    | 127   | 127     | 60      | 64  | Kick    |
+| 2      | Range    | 38     | 38     | PCM      | 13     | 38      | 127    | 127   | 127     | 60      | 64  | Snare   |
+| 2      | Range    | 40     | 40     | PCM      | 14     | 40      | 127    | 127   | 127     | 60      | 64  | Hat     |
 
 **Explanation of Example:**
 1.  **Inst 0 (Simple):** A "Horn" instrument. It uses a single sample (WaveID 0) stretched across the entire keyboard.
