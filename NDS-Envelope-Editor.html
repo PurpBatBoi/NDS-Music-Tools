@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nitro Envelope Editor</title>
+    <style>
+        :root {
+            --bg-body: #1e1e1e;
+            --bg-panel: #2b2b2b;
+            --bg-input: #111;
+            --accent: #00bcd4; /* Cyan */
+            --accent-sf2: #ff9800; /* Orange for SF2 */
+            --text-main: #eee;
+            --text-muted: #888;
+            --border: #444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--bg-panel);
+            width: 900px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: #222;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* Main Layout */
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px; 
+            height: 400px; 
+        }
+
+        /* Canvas Area */
+        .graph-section {
+            position: relative;
+            background: #181818;
+            border-right: 1px solid var(--border);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls Area */
+        .controls-section {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            background: #252525;
+        }
+
+        .fader-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 60px;
+            height: 100%;
+        }
+
+        .fader-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .fader-track {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            background: #1a1a1a;
+            border-radius: 4px;
+            border: 1px solid #333;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 8px;
+            height: 250px;
+            background: transparent;
+            writing-mode: bt-lr; 
+            -webkit-appearance: slider-vertical;
+            appearance: slider-vertical;
+            cursor: pointer;
+        }
+
+        .value-box {
+            font-family: 'Consolas', monospace;
+            background: #000;
+            color: var(--accent);
+            border: 1px solid #444;
+            border-radius: 3px;
+            padding: 6px 0;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 10px;
+            cursor: ns-resize;
+            user-select: none;
+            transition: border-color 0.2s;
+        }
+        
+        .value-box:hover {
+            border-color: var(--accent);
+            background: #111;
+        }
+
+        .info-box {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Polyphone Output Section */
+        .output-section {
+            background: #222;
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .output-col h3 {
+            margin: 0 0 10px 0;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+
+        .poly-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+        }
+
+        .poly-label {
+            color: #aaa;
+            text-align: right;
+            padding-right: 10px;
+        }
+
+        .poly-val {
+            color: var(--accent-sf2);
+            font-weight: bold;
+        }
+
+        .sfz-block textarea {
+            width: 100%;
+            height: 140px;
+            background: #111;
+            border: 1px solid #444;
+            color: #888;
+            font-family: 'Consolas', monospace;
+            font-size: 10px;
+            padding: 5px;
+            resize: none;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h2>Nitro Envelope Editor</h2>
+    </header>
+
+    <div class="editor-layout">
+        <!-- Visualizer -->
+        <div class="graph-section">
+            <canvas id="envCanvas"></canvas>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-section">
+            <!-- Attack -->
+            <div class="fader-group">
+                <span class="fader-label">Att</span>
+                <div class="fader-track">
+                    <input type="range" id="sl-a" min="0" max="127" value="127" orient="vertical">
+                </div>
+                <div class="value-box" id="val-a" title="Scroll to change">127</div>
+                <div class="info-box" id="info-a">0.0 ms</div>
+            </div>
+
+            <!-- Decay -->
+            <div class="fader-group">
+                <span class="fader-label">Dec</span>
+                <div class="fader-track">
+                    <input type="range" id="sl-d" min="0" max="127" value="127" orient="vertical">
+                </div>
+                <div class="value-box" id="val-d" title="Scroll to change">127</div>
+                <div class="info-box" id="info-d">0.0 ms</div>
+            </div>
+
+            <!-- Sustain -->
+            <div class="fader-group">
+                <span class="fader-label">Sus</span>
+                <div class="fader-track">
+                    <input type="range" id="sl-s" min="0" max="127" value="127" orient="vertical">
+                </div>
+                <div class="value-box" id="val-s" title="Scroll to change">127</div>
+                <div class="info-box" id="info-s">0.0 dB</div>
+            </div>
+
+            <!-- Release -->
+            <div class="fader-group">
+                <span class="fader-label">Rel</span>
+                <div class="fader-track">
+                    <input type="range" id="sl-r" min="0" max="127" value="127" orient="vertical">
+                </div>
+                <div class="value-box" id="val-r" title="Scroll to change">127</div>
+                <div class="info-box" id="info-r">0.0 ms</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="output-section">
+        <!-- Polyphone Values -->
+        <div class="output-col">
+            <h3 style="color: var(--accent-sf2)">Polyphone / SF2 Values</h3>
+            <div class="poly-grid">
+                <div class="poly-label">Vol env attack (s):</div>
+                <div class="poly-val" id="out-att">0.000</div>
+
+                <div class="poly-label">Vol env decay (s):</div>
+                <div class="poly-val" id="out-dec">0.000</div>
+
+                <div class="poly-label">Vol env sustain (dB):</div>
+                <div class="poly-val" id="out-sus">0.0</div>
+
+                <div class="poly-label" style="color: #ffcc80">Vol env release (s):</div>
+                <div class="poly-val" id="out-rel" style="color: #ffcc80">0.000</div>
+            </div>
+        </div>
+
+        <!-- FlexEG Output -->
+        <div class="output-col sfz-block">
+            <h3>SFZ FlexEG Output</h3>
+            <textarea id="sfzOutput" readonly></textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Data Tables ---
+    const ATTACK_TABLE = [
+        8606.1, 4756.3, 3339.3, 2594.4, 2130.7, 1807.7, 1573.3, 1401.4,
+        1255.5, 1140.9, 1047.1, 963.8, 896.0, 838.7, 786.6, 745.0,
+        703.3, 666.8, 630.4, 599.1, 578.3, 547.0, 526.2, 505.3,
+        484.5, 468.9, 448.0, 437.6, 416.8, 406.4, 395.9, 385.5,
+        369.9, 359.5, 349.0, 338.6, 328.2, 323.0, 312.6, 307.4,
+        297.0, 291.7, 286.5, 276.1, 270.9, 265.7, 260.5, 255.3,
+        250.1, 244.9, 239.6, 234.4, 229.2, 224.0, 218.8, 213.6,
+        213.6, 208.4, 203.2, 203.2, 198.0, 198.0, 192.8, 192.8,
+        182.3, 182.3, 177.1, 177.1, 171.9, 171.9, 166.7, 166.7,
+        161.5, 161.5, 156.3, 156.3, 151.1, 151.1, 145.9, 145.9,
+        145.9, 145.9, 140.7, 140.7, 140.7, 130.2, 130.2, 130.2,
+        125.0, 125.0, 125.0, 125.0, 119.8, 119.8, 119.8, 114.6,
+        114.6, 114.6, 114.6, 109.4, 109.4, 109.4, 109.4, 109.4,
+        104.2, 104.2, 104.2, 104.2, 99.0, 93.8, 88.6, 83.4,
+        78.2, 72.9, 67.7, 62.5, 57.3, 52.1, 46.9, 41.7,
+        36.5, 31.3, 26.1, 20.8, 15.6, 10.4, 10.4, 0.0
+    ];
+
+    const MAX_DR_TABLE = [
+        481228.8, 160409.6, 96241.6, 68744.0, 53466.4, 43747.6, 37013.6, 32078.8,
+        28303.6, 25324.0, 22911.2, 20919.6, 19245.2, 17820.4, 16593.2, 15522.0,
+        14580.8, 13748.8, 13005.2, 12334.4, 11736.4, 11190.4, 10691.2, 10238.8,
+        9817.6, 9432.8, 9079.2, 8746.4, 8439.6, 8153.6, 7888.4, 7633.6,
+        7399.6, 7181.2, 6973.2, 6775.6, 6588.4, 6411.6, 6245.2, 6089.2,
+        5938.4, 5792.8, 5657.6, 5527.6, 5402.8, 5283.2, 5174.0, 5064.8,
+        4960.8, 4856.8, 4758.0, 4695.6, 4633.2, 4570.8, 4508.4, 4446.0,
+        4383.6, 4321.2, 4258.8, 4196.4, 4134.0, 4071.6, 4009.2, 3946.8,
+        3884.4, 3822.0, 3759.6, 3692.0, 3629.6, 3567.2, 3504.8, 3442.4,
+        3380.0, 3317.6, 3255.2, 3192.8, 3130.4, 3068.0, 3005.6, 2943.2,
+        2880.8, 2818.4, 2756.0, 2693.6, 2631.2, 2568.8, 2506.4, 2438.8,
+        2376.4, 2314.0, 2251.6, 2189.2, 2126.8, 2064.4, 2002.0, 1939.6,
+        1877.2, 1814.8, 1752.4, 1690.0, 1627.6, 1565.2, 1502.8, 1440.4,
+        1378.0, 1315.6, 1253.2, 1185.6, 1123.2, 1060.8, 998.4, 936.0,
+        873.6, 811.2, 748.8, 686.4, 624.0, 561.6, 499.2, 436.8,
+        374.4, 312.0, 249.6, 187.2, 124.8, 62.4, 31.2, 5.2
+    ];
+
+    // --- State & DOM ---
+    const canvas = document.getElementById('envCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const ui = {
+        sliders: {
+            a: document.getElementById('sl-a'),
+            d: document.getElementById('sl-d'),
+            s: document.getElementById('sl-s'),
+            r: document.getElementById('sl-r')
+        },
+        values: {
+            a: document.getElementById('val-a'),
+            d: document.getElementById('val-d'),
+            s: document.getElementById('val-s'),
+            r: document.getElementById('val-r')
+        },
+        infos: {
+            a: document.getElementById('info-a'),
+            d: document.getElementById('info-d'),
+            s: document.getElementById('info-s'),
+            r: document.getElementById('info-r')
+        },
+        poly: {
+            att: document.getElementById('out-att'),
+            dec: document.getElementById('out-dec'),
+            sus: document.getElementById('out-sus'),
+            rel: document.getElementById('out-rel')
+        },
+        sfz: document.getElementById('sfzOutput')
+    };
+
+    let state = { a: 127, d: 127, s: 127, r: 127 }; 
+
+    // --- Logic ---
+    function getSustainLinear(val) { 
+        // Used for Visualizer curve height
+        return Math.pow(val / 127, 2); 
+    }
+
+    // --- Hardware Emulation (For Visualizer) ---
+    // NDS Hardware: Decay/Release times depend on Sustain Level
+    function getDecayTimeHW(decayVal, sustainVal) {
+        if (decayVal >= 127) return 0;
+        const maxTime = MAX_DR_TABLE[decayVal];
+        const susFrac = getSustainLinear(sustainVal);
+        return maxTime * (1.0 - susFrac);
+    }
+    function getReleaseTimeHW(releaseVal, sustainVal) {
+        if (releaseVal >= 127) return 0;
+        const maxTime = MAX_DR_TABLE[releaseVal];
+        const susFrac = getSustainLinear(sustainVal);
+        return maxTime * susFrac;
+    }
+
+    // --- Polyphone Output Logic ---
+    // 1. Times are adjusted based on sustain for accurate phase durations
+    function getAttackMs(val) { return val >= 127 ? 0 : ATTACK_TABLE[val]; }
+    
+    // 2. Sustain uses squared relationship then converts to dB attenuation
+    // This matches the C# code: fraction = (val/127)^2, then attenuation = -20*log10(fraction)
+    function getSustainDB_Polyphone(val) {
+        if (val >= 127) return 0; // No attenuation at max sustain
+        if (val === 0) return 144; // Maximum attenuation (silence) in SF2
+        
+        const fraction = Math.pow(val / 127, 2); // Squared relationship
+        const attenuation = -20 * Math.log10(fraction); // Convert to dB
+        
+        // Clamp to SF2 range (0-144 dB)
+        return Math.min(Math.max(attenuation, 0), 144);
+    }
+
+    // --- Rendering ---
+    function draw() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        
+        const w = rect.width;
+        const h = rect.height;
+        const padLeft = 30;
+        const padBottom = 30;
+        const graphH = h - (padBottom * 2);
+
+        // Clear
+        ctx.fillStyle = '#181818';
+        ctx.fillRect(0, 0, w, h);
+
+        // Calculate VISUAL Hardware Times (Sustain Dependent)
+        const msA = getAttackMs(state.a);
+        const susFrac = getSustainLinear(state.s);
+        const msD_Visual = getDecayTimeHW(state.d, state.s); 
+        const msR_Visual = getReleaseTimeHW(state.r, state.s); 
+        const susLevelY = susFrac * 127; 
+
+        // Auto-Zoom Calculation
+        const holdVisual = 100; 
+        const totalMs = msA + msD_Visual + holdVisual + msR_Visual;
+        const minScaleMs = 100;
+        const viewMs = Math.max(totalMs, minScaleMs) * 1.1; 
+        const scaleX = (w - padLeft * 2) / viewMs; 
+
+        // Draw Grid and Time Labels
+        drawGridAndTime(w, h, padLeft, padBottom, graphH, viewMs);
+
+        // Map Y
+        const mapY = (val) => (h - padBottom) - (val / 127 * graphH);
+
+        // Coordinates
+        const xStart = padLeft;
+        const yStart = mapY(0);
+        const xPeak = xStart + (msA * scaleX);
+        const yPeak = mapY(127);
+        const xSusStart = xPeak + (msD_Visual * scaleX);
+        const ySus = mapY(susLevelY);
+        const xSusEnd = xSusStart + (holdVisual * scaleX);
+        const xEnd = xSusEnd + (msR_Visual * scaleX);
+        const yEnd = mapY(0);
+
+        // --- Draw Curve ---
+        ctx.beginPath();
+        ctx.moveTo(xStart, yStart);
+
+        // 1. Attack: Sigmoid
+        if (msA > 0) {
+            const cp1x = xStart + (msA * scaleX) * 0.5; 
+            const cp1y = yStart;                       
+            const cp2x = xPeak - (msA * scaleX) * 0.5; 
+            const cp2y = yPeak;                        
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, xPeak, yPeak);
+        } else {
+            ctx.lineTo(xPeak, yPeak);
+        }
+
+        // 2. Decay: Exponential
+        if (msD_Visual > 0) ctx.quadraticCurveTo(xPeak + (msD_Visual*scaleX)*0.3, ySus, xSusStart, ySus);
+        else ctx.lineTo(xSusStart, ySus);
+        
+        // 3. Sustain: Flat
+        ctx.lineTo(xSusEnd, ySus);
+        
+        // 4. Release: Exponential
+        if (msR_Visual > 0) ctx.quadraticCurveTo(xSusEnd + (msR_Visual*scaleX)*0.3, yEnd, xEnd, yEnd);
+        else ctx.lineTo(xEnd, yEnd);
+
+        // Stroke
+        ctx.strokeStyle = '#00bcd4';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Fill Gradient
+        ctx.lineTo(xEnd, h - padBottom);
+        ctx.lineTo(xStart, h - padBottom);
+        ctx.closePath();
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, 'rgba(0, 188, 212, 0.2)');
+        grad.addColorStop(1, 'rgba(0, 188, 212, 0.0)');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // --- Draw Nodes (Points) ---
+        drawNode(xPeak, yPeak);       
+        drawNode(xSusStart, ySus);    
+        drawNode(xSusEnd, ySus);      
+        drawNode(xEnd, yEnd);         
+    }
+
+    function drawNode(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e1e1e';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function drawGridAndTime(w, h, pad, padBot, graphH, viewMs) {
+        // Horizontal Grid Lines (Volume)
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+            const y = (h - padBot) - (i * 0.25 * graphH);
+            ctx.beginPath();
+            ctx.moveTo(pad, y);
+            ctx.lineTo(w - pad, y);
+            ctx.stroke();
+        }
+
+        // Time Axis
+        ctx.fillStyle = '#666';
+        ctx.font = '10px Consolas';
+        ctx.textAlign = 'center';
+        
+        const viewSeconds = viewMs / 1000;
+        let step = 1; 
+        if (viewSeconds < 0.5) step = 0.05;
+        else if (viewSeconds < 2) step = 0.2;
+        else if (viewSeconds < 5) step = 0.5;
+        else if (viewSeconds < 10) step = 1;
+        else step = 2;
+        
+        const pixelsPerSec = (w - pad * 2) / viewSeconds;
+
+        ctx.beginPath();
+        for (let t = 0; t <= viewSeconds; t += step) {
+            const x = pad + (t * pixelsPerSec);
+            if (x > w) break;
+
+            ctx.moveTo(x, h - padBot);
+            ctx.lineTo(x, h - padBot + 5);
+            
+            const label = parseFloat(t.toFixed(2)) + "s";
+            ctx.fillText(label, x, h - 5);
+        }
+        ctx.stroke();
+    }
+
+    // --- Output Generator ---
+    function updateOutput() {
+        const SF2_RELEASE_SCALAR = 1.8; // Only Scale Release
+
+        // Hardware raw times (ms)
+        const msA = getAttackMs(state.a);
+        const msD = getDecayTimeHW(state.d, state.s);
+        const msR = getReleaseTimeHW(state.r, state.s);
+        
+        // Output for Editor: Uses proper dB attenuation
+        const dbS = getSustainDB_Polyphone(state.s);
+
+        const sA = (msA / 1000).toFixed(3);
+        const sD = (msD / 1000).toFixed(3); // NO SCALAR ON DECAY
+        const sR = ((msR * SF2_RELEASE_SCALAR) / 1000).toFixed(3); // SCALE RELEASE
+        const sDb = dbS.toFixed(1);
+
+        ui.poly.att.innerText = sA;
+        ui.poly.dec.innerText = sD;
+        ui.poly.sus.innerText = sDb;
+        ui.poly.rel.innerText = sR;
+
+        // FlexEG output 
+        const susLevel = Math.max(0, 1.0 - (dbS / 144.0));
+        
+        ui.sfz.value = `// FlexEG Envelope Generator (eg1)
+
+eg1_ampeg=1
+
+eg1_level0=0
+eg1_level1=0\t\teg1_time1=0
+
+eg1_level2=1\t\teg1_time2=${sA}\t\teg1_shape2=-4
+
+eg1_level3=1\t\teg1_time3=0
+
+eg1_level4=${susLevel.toFixed(3)}\t\teg1_time4=${sD}\t\teg1_shape4=-4\t\teg1_sustain=4
+
+eg1_level5=0\t\teg1_time5=${sR}\t\teg1_shape5=-4`;
+    }
+
+    // --- Update Info Boxes ---
+    function updateInfo(key, val) {
+        let infoText = "";
+        if (key === 'a') {
+            infoText = getAttackMs(val).toFixed(1) + " ms";
+        } else if (key === 'd') {
+            infoText = getDecayTimeHW(val, state.s).toFixed(1) + " ms";
+        } else if (key === 's') {
+            infoText = getSustainDB_Polyphone(val).toFixed(1) + " dB";
+        } else if (key === 'r') {
+            infoText = getReleaseTimeHW(val, state.s).toFixed(1) + " ms";
+        }
+        ui.infos[key].innerText = infoText;
+    }
+
+    // --- Interaction ---
+    function updateValue(key, val) {
+        if (val > 127) val = 127;
+        if (val < 0) val = 0;
+        
+        state[key] = val;
+        ui.sliders[key].value = val;
+        ui.values[key].innerText = val;
+        if (key === 's') {
+            updateInfo('d', state.d);
+            updateInfo('r', state.r);
+        }
+        updateInfo(key, val);
+        draw();
+        updateOutput();
+    }
+
+    function handleInput(key) {
+        const val = parseInt(ui.sliders[key].value);
+        updateValue(key, val);
+    }
+
+    function init() {
+        ['a', 'd', 's', 'r'].forEach(k => {
+            ui.sliders[k].addEventListener('input', () => handleInput(k));
+            ui.values[k].addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = Math.sign(e.deltaY) * -1;
+                updateValue(k, state[k] + delta);
+            });
+            handleInput(k);
+        });
+        window.addEventListener('resize', draw);
+    }
+
+    init();
+</script>
+</body>
+</html>
